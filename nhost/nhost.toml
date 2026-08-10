@@ -112,7 +112,9 @@ enabled = false
 
 [postgres.resources]
 [postgres.resources.storage]
-capacity = 10
+# 1 GB is what the Starter plan allows, and this schema needs a tiny fraction of
+# it. Asking for more than the plan permits fails the deploy outright.
+capacity = 1
 
 [provider]
 
