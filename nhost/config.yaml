@@ -1,0 +1,14 @@
+# Hasura CLI project file. The deploy runs `hasura migrate apply` and
+# `hasura metadata apply` with this directory as the project, so the CLI needs
+# this to know where the migrations and metadata live.
+#
+# The endpoint here is only the local default; nhost passes the real endpoint and
+# admin secret at deploy time, and `npm run db:apply` talks to Hasura's metadata
+# API directly without using the CLI at all.
+version: 3
+endpoint: http://localhost:8080
+metadata_directory: metadata
+migrations_directory: migrations
+actions:
+  kind: synchronous
+  handler_webhook_baseurl: http://localhost:3001
