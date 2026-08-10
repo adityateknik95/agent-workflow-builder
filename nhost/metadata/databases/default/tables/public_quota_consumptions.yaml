@@ -1,0 +1,18 @@
+table:
+  name: quota_consumptions
+  schema: public
+object_relationships:
+  - name: org
+    using:
+      foreign_key_constraint_on: org_id
+  - name: run
+    using:
+      foreign_key_constraint_on: workflow_run_id
+# Tracked because consume_org_quota() returns SETOF this table, and Hasura will
+# not expose a function whose return table is untracked.
+#
+# There are deliberately no permissions here. With Hasura inferring function
+# permissions from the return table, granting nobody select on this table is also
+# what keeps consume_org_quota() callable by the admin secret only -- i.e. by the
+# Action handlers, never by a client. Members see their quota position through the
+# org_usage_summary view instead.

@@ -1,0 +1,98 @@
+table:
+  name: organizations
+  schema: public
+object_relationships:
+  - name: usage
+    using:
+      manual_configuration:
+        remote_table:
+          name: org_usage_summary
+          schema: public
+        column_mapping:
+          id: org_id
+array_relationships:
+  - name: members
+    using:
+      foreign_key_constraint_on:
+        column: org_id
+        table:
+          name: org_members
+          schema: public
+  - name: workflows
+    using:
+      foreign_key_constraint_on:
+        column: org_id
+        table:
+          name: workflows
+          schema: public
+  - name: runs
+    using:
+      foreign_key_constraint_on:
+        column: org_id
+        table:
+          name: workflow_runs
+          schema: public
+select_permissions:
+  # `user` is the bootstrap role every session starts in: it can see which orgs
+  # it belongs to, and nothing else in the product. The app then re-issues
+  # requests as owner/editor/viewer for the org the member picked.
+  - role: user
+    permission:
+      columns: [id, name, slug, created_at]
+      filter:
+        members:
+          user_id:
+            _eq: X-Hasura-User-Id
+  - role: viewer
+    permission:
+      columns: [id, name, slug, quota_period_start, calls_used, calls_allowed, created_at, updated_at]
+      filter:
+        members:
+          _and:
+            - user_id:
+                _eq: X-Hasura-User-Id
+            - role:
+                _eq: viewer
+  - role: editor
+    permission:
+      columns: [id, name, slug, quota_period_start, calls_used, calls_allowed, created_at, updated_at]
+      filter:
+        members:
+          _and:
+            - user_id:
+                _eq: X-Hasura-User-Id
+            - role:
+                _eq: editor
+  - role: owner
+    permission:
+      columns: [id, name, slug, quota_period_start, calls_used, calls_allowed, created_at, updated_at]
+      filter:
+        members:
+          _and:
+            - user_id:
+                _eq: X-Hasura-User-Id
+            - role:
+                _eq: owner
+update_permissions:
+  # An owner can rename their org but cannot edit the quota columns, otherwise
+  # the quota would be self-service and meaningless.
+  - role: owner
+    permission:
+      columns: [name]
+      filter:
+        members:
+          _and:
+            - user_id:
+                _eq: X-Hasura-User-Id
+            - role:
+                _eq: owner
+      check:
+        members:
+          _and:
+            - user_id:
+                _eq: X-Hasura-User-Id
+            - role:
+                _eq: owner
+# No insert or delete permission for any client role: organisations are
+# provisioned out of band (seed / admin), which keeps the "who may join an org"
+# decision off the public API surface.

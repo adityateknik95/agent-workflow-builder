@@ -1,0 +1,7 @@
+{
+  "name": "workflow-functions",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Hasura Action and Event Trigger handlers, deployed as nhost serverless functions",
+  "dependencies": {}
+}

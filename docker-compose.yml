@@ -1,0 +1,111 @@
+# Local backend for development and for the walkthrough. This is the same set of
+# services the nhost CLI runs (Postgres + Hasura + hasura-auth), pinned here so
+# the project can be brought up with plain Docker if you don't want to install
+# the CLI. The migrations and metadata mounted below are the exact files that
+# get deployed to nhost, there is no separate "local" schema.
+#
+#   docker compose up -d
+#   npm run db:apply      # migrations + metadata
+#   npm run seed          # two orgs, five users
+#   npm run functions:dev # Action / Event Trigger handlers on :3001
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: postgres
+    command:
+      - postgres
+      - -c
+      - wal_level=logical
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres-init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  graphql-engine:
+    image: hasura/graphql-engine:v2.50.0
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/postgres
+      HASURA_GRAPHQL_ADMIN_SECRET: ${HASURA_GRAPHQL_ADMIN_SECRET:-nhost-admin-secret}
+      HASURA_GRAPHQL_JWT_SECRET: '{"type":"HS256","key":"${HASURA_GRAPHQL_JWT_SECRET_KEY:-0f2b3d7d6a9c4f118a5e7c1b9d4f6a2e8c3b5d7f9a1c3e5b7d9f1a3c5e7b9d1f}"}'
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+      HASURA_GRAPHQL_DEV_MODE: "true"
+      HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup,http-log,webhook-log,websocket-log,query-log
+      # Anonymous requests are resolved as `public`. Only the inbound webhook
+      # Action is exposed to that role; every table permission requires a
+      # session user, so `public` can read nothing.
+      HASURA_GRAPHQL_UNAUTHORIZED_ROLE: public
+      HASURA_GRAPHQL_ENABLE_ALLOWLIST: "false"
+      # Where the Action / Event Trigger handlers live. On nhost this variable is
+      # your project's functions URL; locally the handlers run on the host.
+      NHOST_FUNCTIONS_URL: ${NHOST_FUNCTIONS_URL:-http://host.docker.internal:3001}
+      # Shared secret Hasura sends with every webhook call so the handlers can
+      # tell a genuine Hasura call from an arbitrary internet request.
+      NHOST_WEBHOOK_SECRET: ${NHOST_WEBHOOK_SECRET:-local-webhook-secret}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8080:8080"
+
+  auth:
+    image: nhost/hasura-auth:0.42.0
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/postgres
+      POSTGRES_MIGRATIONS_CONNECTION: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/postgres
+      HASURA_GRAPHQL_GRAPHQL_URL: http://graphql-engine:8080/v1/graphql
+      HASURA_GRAPHQL_ADMIN_SECRET: ${HASURA_GRAPHQL_ADMIN_SECRET:-nhost-admin-secret}
+      HASURA_GRAPHQL_JWT_SECRET: '{"type":"HS256","key":"${HASURA_GRAPHQL_JWT_SECRET_KEY:-0f2b3d7d6a9c4f118a5e7c1b9d4f6a2e8c3b5d7f9a1c3e5b7d9f1a3c5e7b9d1f}"}'
+      AUTH_HOST: 0.0.0.0
+      AUTH_PORT: 4000
+      # nhost's API gateway serves the auth service under /v1. Setting the same
+      # prefix here means AUTH_URL is spelled identically locally and in the cloud.
+      AUTH_API_PREFIX: /v1
+      AUTH_SERVER_URL: http://localhost:4000/v1
+      AUTH_CLIENT_URL: http://localhost:3000
+      # The org role a user asks to act as is carried in the JWT's allowed roles;
+      # whether it is actually true for a given org is decided by the row
+      # permissions against org_members, never by the token alone.
+      AUTH_USER_DEFAULT_ROLE: user
+      AUTH_USER_DEFAULT_ALLOWED_ROLES: user,me,owner,editor,viewer
+      AUTH_ACCESS_TOKEN_EXPIRES_IN: "900"
+      AUTH_REFRESH_TOKEN_EXPIRES_IN: "2592000"
+      AUTH_DISABLE_NEW_USERS: "false"
+      AUTH_EMAIL_SIGNIN_EMAIL_VERIFIED_REQUIRED: "false"
+      AUTH_WEBAUTHN_ENABLED: "false"
+      AUTH_SMTP_HOST: mailpit
+      AUTH_SMTP_PORT: "1025"
+      AUTH_SMTP_USER: local
+      AUTH_SMTP_PASS: local
+      AUTH_SMTP_SENDER: no-reply@localhost
+      AUTH_SMTP_SECURE: "false"
+      AUTH_SMTP_AUTH_METHOD: PLAIN
+    ports:
+      - "4000:4000"
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+volumes:
+  postgres_data:

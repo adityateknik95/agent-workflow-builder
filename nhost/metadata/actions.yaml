@@ -1,0 +1,58 @@
+actions:
+  # The integration point. Permissions here are the first gate (a viewer does not
+  # even get this field in their schema); the handler repeats the check against
+  # org_members because an Action's role permission proves what role was
+  # requested, not that the caller holds it in this particular org.
+  - name: triggerWorkflowRun
+    definition:
+      kind: synchronous
+      handler: "{{NHOST_FUNCTIONS_URL}}/actions/trigger-workflow-run"
+      forward_client_headers: false
+      timeout: 120
+      headers:
+        - name: x-nhost-webhook-secret
+          value_from_env: NHOST_WEBHOOK_SECRET
+    permissions:
+      - role: owner
+      - role: editor
+    comment: Verifies role and quota, then executes the workflow's steps in order.
+
+  - name: approveStep
+    definition:
+      kind: synchronous
+      handler: "{{NHOST_FUNCTIONS_URL}}/actions/approve-step"
+      forward_client_headers: false
+      timeout: 120
+      headers:
+        - name: x-nhost-webhook-secret
+          value_from_env: NHOST_WEBHOOK_SECRET
+    permissions:
+      - role: owner
+      - role: editor
+    comment: Clears or rejects a paused approval_gate and resumes the run.
+
+  # Deliberately open to `public`: this is the endpoint an external system calls.
+  # No table permission is granted to `public`, so the token in the argument is
+  # the only thing that can authorise anything here.
+  - name: startWorkflowFromWebhook
+    definition:
+      kind: synchronous
+      handler: "{{NHOST_FUNCTIONS_URL}}/actions/webhook-trigger"
+      forward_client_headers: false
+      timeout: 120
+      headers:
+        - name: x-nhost-webhook-secret
+          value_from_env: NHOST_WEBHOOK_SECRET
+    permissions:
+      - role: public
+    comment: Inbound webhook endpoint; authorises by the trigger's webhook token.
+
+custom_types:
+  enums:
+    - name: ApprovalDecision
+  input_objects: []
+  objects:
+    - name: TriggerWorkflowRunOutput
+    - name: ApproveStepOutput
+    - name: WebhookRunOutput
+  scalars: []

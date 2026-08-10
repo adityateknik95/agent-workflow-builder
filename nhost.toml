@@ -1,0 +1,114 @@
+# nhost project configuration.
+#
+# Run `nhost config validate` after cloning: the CLI pins service versions to what
+# your installed version supports, and it will tell you if any of these need
+# bumping.
+#
+# The one setting that matters most for this project is the allowed roles list
+# under [auth.session.accessToken]. owner/editor/viewer have to be issuable in a
+# user's JWT, because the app asks Hasura to act as one of them per request. Which
+# of them a user actually holds for a given organisation is decided by the row
+# permissions against org_members, never by the token.
+
+[global]
+
+[[global.environment]]
+name = 'LLM_PROVIDER'
+value = '{{ secrets.LLM_PROVIDER }}'
+
+[[global.environment]]
+name = 'LLM_API_KEY'
+value = '{{ secrets.LLM_API_KEY }}'
+
+[[global.environment]]
+name = 'LLM_MODEL'
+value = '{{ secrets.LLM_MODEL }}'
+
+[[global.environment]]
+name = 'SLACK_WEBHOOK_URL'
+value = '{{ secrets.SLACK_WEBHOOK_URL }}'
+
+[hasura]
+version = 'v2.50.0-ce'
+adminSecret = '{{ secrets.HASURA_GRAPHQL_ADMIN_SECRET }}'
+webhookSecret = '{{ secrets.NHOST_WEBHOOK_SECRET }}'
+
+[[hasura.jwtSecrets]]
+type = 'HS256'
+key = '{{ secrets.HASURA_GRAPHQL_JWT_SECRET }}'
+
+[hasura.settings]
+corsDomain = ['*']
+devMode = false
+enableAllowList = false
+enableConsole = true
+enableRemoteSchemaPermissions = false
+enabledAPIs = ['metadata', 'graphql']
+# Anonymous requests resolve as `public`. No table grants that role anything; it
+# exists so the inbound webhook Action can be called without a session.
+unauthorizedRole = 'public'
+stringifyNumericTypes = false
+
+[hasura.logs]
+level = 'warn'
+
+[hasura.events]
+httpPoolSize = 100
+
+[functions]
+[functions.node]
+version = 22
+
+[auth]
+version = '0.42.0'
+
+[auth.redirections]
+clientUrl = 'http://localhost:3000'
+allowedUrls = ['http://localhost:3000']
+
+[auth.signUp]
+enabled = true
+
+[auth.user]
+[auth.user.roles]
+default = 'user'
+allowed = ['user', 'me', 'owner', 'editor', 'viewer']
+
+[auth.user.email]
+[auth.user.emailDomains]
+
+[auth.session]
+[auth.session.accessToken]
+expiresIn = 900
+
+[auth.session.refreshToken]
+expiresIn = 2592000
+
+[auth.method]
+[auth.method.emailPassword]
+emailVerificationRequired = false
+hibpEnabled = false
+passwordMinLength = 9
+
+[auth.method.emailPasswordless]
+enabled = false
+
+[auth.method.anonymous]
+enabled = false
+
+[auth.method.webauthn]
+enabled = false
+
+[auth.rateLimit]
+
+[postgres]
+version = '16.4-20241017-1'
+
+[provider]
+
+[storage]
+version = '0.7.1'
+
+[observability]
+[observability.grafana]
+adminPassword = '{{ secrets.GRAFANA_ADMIN_PASSWORD }}'

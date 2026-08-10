@@ -1,0 +1,48 @@
+table:
+  name: workflow_artifacts
+  schema: public
+object_relationships:
+  - name: run
+    using:
+      foreign_key_constraint_on: workflow_run_id
+  - name: org
+    using:
+      foreign_key_constraint_on: org_id
+  - name: step_run
+    using:
+      foreign_key_constraint_on: step_run_id
+# Written only by `db_write` steps, through the executor. Readable by the org.
+select_permissions:
+  - role: viewer
+    permission:
+      columns: [id, org_id, workflow_run_id, step_run_id, key, payload, created_at]
+      filter:
+        org:
+          members:
+            _and:
+              - user_id:
+                  _eq: X-Hasura-User-Id
+              - role:
+                  _eq: viewer
+  - role: editor
+    permission:
+      columns: [id, org_id, workflow_run_id, step_run_id, key, payload, created_at]
+      filter:
+        org:
+          members:
+            _and:
+              - user_id:
+                  _eq: X-Hasura-User-Id
+              - role:
+                  _eq: editor
+  - role: owner
+    permission:
+      columns: [id, org_id, workflow_run_id, step_run_id, key, payload, created_at]
+      filter:
+        org:
+          members:
+            _and:
+              - user_id:
+                  _eq: X-Hasura-User-Id
+              - role:
+                  _eq: owner

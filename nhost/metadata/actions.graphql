@@ -1,0 +1,63 @@
+type Mutation {
+  """
+  Starts a run of a workflow the caller is allowed to trigger. Verifies the
+  caller's role in the workflow's org, checks the quota, creates the run and its
+  step_runs, then executes the steps in order. Returns when the run reaches a
+  terminal state or stops on an approval gate.
+  """
+  triggerWorkflowRun(
+    workflow_id: uuid!
+    input: jsonb
+  ): TriggerWorkflowRunOutput!
+}
+
+type Mutation {
+  """
+  Records an approval decision on a paused approval_gate step and, when
+  approved, resumes the run from the following step. The handler re-checks the
+  approver's role in the run's org before touching anything.
+  """
+  approveStep(
+    step_run_id: uuid!
+    decision: ApprovalDecision!
+    note: String
+  ): ApproveStepOutput!
+}
+
+type Mutation {
+  """
+  Inbound endpoint for external systems. Exposed to the unauthenticated `public`
+  role: authorisation comes from the trigger's own webhook token, which only an
+  owner can read out of the API.
+  """
+  startWorkflowFromWebhook(
+    token: String!
+    payload: jsonb
+  ): WebhookRunOutput!
+}
+
+enum ApprovalDecision {
+  approve
+  reject
+}
+
+type TriggerWorkflowRunOutput {
+  workflow_run_id: uuid!
+  status: String!
+  steps_executed: Int!
+  message: String
+}
+
+type ApproveStepOutput {
+  step_run_id: uuid!
+  run_status: String!
+  resumed: Boolean!
+  message: String
+}
+
+type WebhookRunOutput {
+  workflow_run_id: uuid
+  status: String!
+  accepted: Boolean!
+  message: String
+}

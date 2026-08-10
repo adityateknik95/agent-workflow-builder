@@ -1,0 +1,164 @@
+table:
+  name: workflow_triggers
+  schema: public
+object_relationships:
+  - name: workflow
+    using:
+      foreign_key_constraint_on: workflow_id
+  - name: trigger_type
+    using:
+      foreign_key_constraint_on: type
+select_permissions:
+  # Column-level half of layer 2: `webhook_token` is missing from the viewer and
+  # editor column lists. Holding that token is enough to start a run from
+  # outside, so only an owner can read it back.
+  - role: viewer
+    permission:
+      columns: [id, workflow_id, type, config, is_enabled, created_by, created_at, updated_at]
+      filter:
+        workflow:
+          org:
+            members:
+              _and:
+                - user_id:
+                    _eq: X-Hasura-User-Id
+                - role:
+                    _eq: viewer
+  - role: editor
+    permission:
+      columns: [id, workflow_id, type, config, is_enabled, created_by, created_at, updated_at]
+      filter:
+        workflow:
+          org:
+            members:
+              _and:
+                - user_id:
+                    _eq: X-Hasura-User-Id
+                - role:
+                    _eq: editor
+  - role: owner
+    permission:
+      columns: [id, workflow_id, type, config, webhook_token, is_enabled, created_by, created_at, updated_at]
+      filter:
+        workflow:
+          org:
+            members:
+              _and:
+                - user_id:
+                    _eq: X-Hasura-User-Id
+                - role:
+                    _eq: owner
+insert_permissions:
+  # An editor can attach `manual` and `schedule` triggers. `webhook` and
+  # `database_event` carry requires_owner = true, because both let something
+  # outside the app start runs that spend the org's quota.
+  - role: editor
+    permission:
+      check:
+        _and:
+          - workflow:
+              org:
+                members:
+                  _and:
+                    - user_id:
+                        _eq: X-Hasura-User-Id
+                    - role:
+                        _eq: editor
+          - trigger_type:
+              requires_owner:
+                _eq: false
+      columns: [workflow_id, type, config, is_enabled]
+      set:
+        created_by: x-hasura-user-id
+  - role: owner
+    permission:
+      check:
+        workflow:
+          org:
+            members:
+              _and:
+                - user_id:
+                    _eq: X-Hasura-User-Id
+                - role:
+                    _eq: owner
+      columns: [workflow_id, type, config, is_enabled]
+      set:
+        created_by: x-hasura-user-id
+update_permissions:
+  - role: editor
+    permission:
+      columns: [config, is_enabled]
+      filter:
+        _and:
+          - workflow:
+              org:
+                members:
+                  _and:
+                    - user_id:
+                        _eq: X-Hasura-User-Id
+                    - role:
+                        _eq: editor
+          - trigger_type:
+              requires_owner:
+                _eq: false
+      check:
+        _and:
+          - workflow:
+              org:
+                members:
+                  _and:
+                    - user_id:
+                        _eq: X-Hasura-User-Id
+                    - role:
+                        _eq: editor
+          - trigger_type:
+              requires_owner:
+                _eq: false
+  - role: owner
+    permission:
+      columns: [type, config, is_enabled]
+      filter:
+        workflow:
+          org:
+            members:
+              _and:
+                - user_id:
+                    _eq: X-Hasura-User-Id
+                - role:
+                    _eq: owner
+      check:
+        workflow:
+          org:
+            members:
+              _and:
+                - user_id:
+                    _eq: X-Hasura-User-Id
+                - role:
+                    _eq: owner
+delete_permissions:
+  - role: editor
+    permission:
+      filter:
+        _and:
+          - workflow:
+              org:
+                members:
+                  _and:
+                    - user_id:
+                        _eq: X-Hasura-User-Id
+                    - role:
+                        _eq: editor
+          - trigger_type:
+              requires_owner:
+                _eq: false
+  - role: owner
+    permission:
+      filter:
+        workflow:
+          org:
+            members:
+              _and:
+                - user_id:
+                    _eq: X-Hasura-User-Id
+                - role:
+                    _eq: owner

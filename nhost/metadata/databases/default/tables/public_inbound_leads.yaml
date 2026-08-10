@@ -1,0 +1,88 @@
+table:
+  name: inbound_leads
+  schema: public
+object_relationships:
+  - name: org
+    using:
+      foreign_key_constraint_on: org_id
+select_permissions:
+  - role: viewer
+    permission:
+      columns: [id, org_id, email, company, message, source, created_by, created_at]
+      filter:
+        org:
+          members:
+            _and:
+              - user_id:
+                  _eq: X-Hasura-User-Id
+              - role:
+                  _eq: viewer
+  - role: editor
+    permission:
+      columns: [id, org_id, email, company, message, source, created_by, created_at]
+      filter:
+        org:
+          members:
+            _and:
+              - user_id:
+                  _eq: X-Hasura-User-Id
+              - role:
+                  _eq: editor
+  - role: owner
+    permission:
+      columns: [id, org_id, email, company, message, source, created_by, created_at]
+      filter:
+        org:
+          members:
+            _and:
+              - user_id:
+                  _eq: X-Hasura-User-Id
+              - role:
+                  _eq: owner
+insert_permissions:
+  # Inserting a lead is an ordinary business write, so an editor can do it. The
+  # run it kicks off still goes through the same role and quota checks, because
+  # the Event Trigger handler runs the executor the same way the button does.
+  - role: editor
+    permission:
+      check:
+        org:
+          members:
+            _and:
+              - user_id:
+                  _eq: X-Hasura-User-Id
+              - role:
+                  _eq: editor
+      columns: [org_id, email, company, message, source]
+      set:
+        created_by: x-hasura-user-id
+  - role: owner
+    permission:
+      check:
+        org:
+          members:
+            _and:
+              - user_id:
+                  _eq: X-Hasura-User-Id
+              - role:
+                  _eq: owner
+      columns: [org_id, email, company, message, source]
+      set:
+        created_by: x-hasura-user-id
+# A row landing here is the "row change in a watched table" trigger: Hasura's
+# Event Trigger calls the handler, which finds every enabled database_event
+# trigger for this org and starts a run -- no button click involved.
+event_triggers:
+  - name: inbound_lead_created
+    definition:
+      enable_manual: true
+      insert:
+        columns: "*"
+    retry_conf:
+      num_retries: 2
+      interval_sec: 10
+      timeout_sec: 120
+    webhook: "{{NHOST_FUNCTIONS_URL}}/events/inbound-lead"
+    headers:
+      - name: x-nhost-webhook-secret
+        value_from_env: NHOST_WEBHOOK_SECRET

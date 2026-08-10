@@ -1,0 +1,61 @@
+table:
+  name: notifications
+  schema: public
+object_relationships:
+  - name: run
+    using:
+      foreign_key_constraint_on: workflow_run_id
+  - name: org
+    using:
+      foreign_key_constraint_on: org_id
+select_permissions:
+  - role: viewer
+    permission:
+      columns: [id, org_id, workflow_run_id, step_run_id, channel, target, subject, body, status, attempt, error, delivered_at, created_at]
+      filter:
+        org:
+          members:
+            _and:
+              - user_id:
+                  _eq: X-Hasura-User-Id
+              - role:
+                  _eq: viewer
+  - role: editor
+    permission:
+      columns: [id, org_id, workflow_run_id, step_run_id, channel, target, subject, body, status, attempt, error, delivered_at, created_at]
+      filter:
+        org:
+          members:
+            _and:
+              - user_id:
+                  _eq: X-Hasura-User-Id
+              - role:
+                  _eq: editor
+  - role: owner
+    permission:
+      columns: [id, org_id, workflow_run_id, step_run_id, channel, target, subject, body, status, attempt, error, delivered_at, created_at]
+      filter:
+        org:
+          members:
+            _and:
+              - user_id:
+                  _eq: X-Hasura-User-Id
+              - role:
+                  _eq: owner
+# This is how the `notify` step type is implemented: the executor inserts a row,
+# and Hasura's Event Trigger delivers it out of band with its own retry budget,
+# so a slow Slack endpoint never stalls the run.
+event_triggers:
+  - name: notification_enqueued
+    definition:
+      enable_manual: true
+      insert:
+        columns: "*"
+    retry_conf:
+      num_retries: 3
+      interval_sec: 10
+      timeout_sec: 30
+    webhook: "{{NHOST_FUNCTIONS_URL}}/events/send-notification"
+    headers:
+      - name: x-nhost-webhook-secret
+        value_from_env: NHOST_WEBHOOK_SECRET

@@ -1,0 +1,18 @@
+# Runs every minute and starts any workflow whose `schedule` trigger is due.
+# Keeping the cron expression per trigger in the database (rather than one Hasura
+# cron trigger per workflow) means members can add and edit schedules through the
+# app without anyone touching Hasura metadata.
+- name: dispatch_scheduled_workflows
+  webhook: "{{NHOST_FUNCTIONS_URL}}/events/scheduled-runs"
+  schedule: "* * * * *"
+  include_in_metadata: true
+  payload: {}
+  retry_conf:
+    num_retries: 1
+    retry_interval_seconds: 15
+    timeout_seconds: 120
+    tolerance_seconds: 300
+  headers:
+    - name: x-nhost-webhook-secret
+      value_from_env: NHOST_WEBHOOK_SECRET
+  comment: Evaluates every enabled schedule trigger once a minute.

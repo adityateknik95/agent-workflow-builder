@@ -1,0 +1,21 @@
+node_modules/
+.env
+.env.local
+.env*.local
+!.env.example
+
+# Next.js
+web/.next/
+web/out/
+web/next-env.d.ts
+
+# logs / editor / os
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# editor/agent tooling
+.claude/

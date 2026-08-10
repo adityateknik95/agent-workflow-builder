@@ -1,0 +1,177 @@
+table:
+  name: workflow_steps
+  schema: public
+object_relationships:
+  - name: workflow
+    using:
+      foreign_key_constraint_on: workflow_id
+  # Used by the editor permissions below to reach `requires_owner`.
+  - name: step_type
+    using:
+      foreign_key_constraint_on: type
+array_relationships:
+  - name: step_runs
+    using:
+      foreign_key_constraint_on:
+        column: workflow_step_id
+        table:
+          name: step_runs
+          schema: public
+select_permissions:
+  - role: viewer
+    permission:
+      columns: [id, workflow_id, position, type, name, config, created_by, created_at, updated_at]
+      filter:
+        workflow:
+          org:
+            members:
+              _and:
+                - user_id:
+                    _eq: X-Hasura-User-Id
+                - role:
+                    _eq: viewer
+      allow_aggregations: true
+  - role: editor
+    permission:
+      columns: [id, workflow_id, position, type, name, config, created_by, created_at, updated_at]
+      filter:
+        workflow:
+          org:
+            members:
+              _and:
+                - user_id:
+                    _eq: X-Hasura-User-Id
+                - role:
+                    _eq: editor
+      allow_aggregations: true
+  - role: owner
+    permission:
+      columns: [id, workflow_id, position, type, name, config, created_by, created_at, updated_at]
+      filter:
+        workflow:
+          org:
+            members:
+              _and:
+                - user_id:
+                    _eq: X-Hasura-User-Id
+                - role:
+                    _eq: owner
+      allow_aggregations: true
+insert_permissions:
+  # LAYER 2, database half. An editor may only insert step types whose
+  # `requires_owner` flag is false, so `db_write` and `notify` are rejected by
+  # the permission itself -- not by the UI hiding a button, and not by the
+  # handler alone. The owner permission below has no such clause.
+  - role: editor
+    permission:
+      check:
+        _and:
+          - workflow:
+              org:
+                members:
+                  _and:
+                    - user_id:
+                        _eq: X-Hasura-User-Id
+                    - role:
+                        _eq: editor
+          - step_type:
+              requires_owner:
+                _eq: false
+      columns: [workflow_id, position, type, name, config]
+      set:
+        created_by: x-hasura-user-id
+  - role: owner
+    permission:
+      check:
+        workflow:
+          org:
+            members:
+              _and:
+                - user_id:
+                    _eq: X-Hasura-User-Id
+                - role:
+                    _eq: owner
+      columns: [workflow_id, position, type, name, config]
+      set:
+        created_by: x-hasura-user-id
+update_permissions:
+  # The same clause appears in both `filter` (which rows may be touched) and
+  # `check` (what they may become), so an editor can neither edit an existing
+  # privileged step nor convert an ordinary step into one.
+  - role: editor
+    permission:
+      columns: [position, type, name, config]
+      filter:
+        _and:
+          - workflow:
+              org:
+                members:
+                  _and:
+                    - user_id:
+                        _eq: X-Hasura-User-Id
+                    - role:
+                        _eq: editor
+          - step_type:
+              requires_owner:
+                _eq: false
+      check:
+        _and:
+          - workflow:
+              org:
+                members:
+                  _and:
+                    - user_id:
+                        _eq: X-Hasura-User-Id
+                    - role:
+                        _eq: editor
+          - step_type:
+              requires_owner:
+                _eq: false
+  - role: owner
+    permission:
+      columns: [position, type, name, config]
+      filter:
+        workflow:
+          org:
+            members:
+              _and:
+                - user_id:
+                    _eq: X-Hasura-User-Id
+                - role:
+                    _eq: owner
+      check:
+        workflow:
+          org:
+            members:
+              _and:
+                - user_id:
+                    _eq: X-Hasura-User-Id
+                - role:
+                    _eq: owner
+delete_permissions:
+  - role: editor
+    permission:
+      filter:
+        _and:
+          - workflow:
+              org:
+                members:
+                  _and:
+                    - user_id:
+                        _eq: X-Hasura-User-Id
+                    - role:
+                        _eq: editor
+          - step_type:
+              requires_owner:
+                _eq: false
+  - role: owner
+    permission:
+      filter:
+        workflow:
+          org:
+            members:
+              _and:
+                - user_id:
+                    _eq: X-Hasura-User-Id
+                - role:
+                    _eq: owner

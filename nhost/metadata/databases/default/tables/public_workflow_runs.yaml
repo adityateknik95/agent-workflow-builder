@@ -1,0 +1,96 @@
+table:
+  name: workflow_runs
+  schema: public
+object_relationships:
+  - name: workflow
+    using:
+      foreign_key_constraint_on: workflow_id
+  - name: org
+    using:
+      foreign_key_constraint_on: org_id
+  - name: initiator
+    using:
+      manual_configuration:
+        remote_table:
+          name: org_member_profiles
+          schema: public
+        column_mapping:
+          triggered_by: user_id
+          org_id: org_id
+array_relationships:
+  - name: step_runs
+    using:
+      foreign_key_constraint_on:
+        column: workflow_run_id
+        table:
+          name: step_runs
+          schema: public
+computed_fields:
+  - name: duration_seconds
+    definition:
+      function:
+        name: workflow_run_duration_seconds
+        schema: public
+      table_argument: run
+    comment: Wall-clock seconds from started_at to finished_at, or to now for a live run.
+select_permissions:
+  # Reads are scoped through the denormalised org_id, which a trigger derives
+  # from the parent workflow, so this is a single indexed join per row.
+  - role: viewer
+    permission:
+      columns: &run_columns
+        - id
+        - workflow_id
+        - org_id
+        - status
+        - trigger_type
+        - triggered_by
+        - trigger_payload
+        - resume_from_position
+        - external_calls
+        - error
+        - started_at
+        - finished_at
+        - created_at
+        - updated_at
+      computed_fields: [duration_seconds]
+      filter:
+        org:
+          members:
+            _and:
+              - user_id:
+                  _eq: X-Hasura-User-Id
+              - role:
+                  _eq: viewer
+      allow_aggregations: true
+  - role: editor
+    permission:
+      columns: *run_columns
+      computed_fields: [duration_seconds]
+      filter:
+        org:
+          members:
+            _and:
+              - user_id:
+                  _eq: X-Hasura-User-Id
+              - role:
+                  _eq: editor
+      allow_aggregations: true
+  - role: owner
+    permission:
+      columns: *run_columns
+      computed_fields: [duration_seconds]
+      filter:
+        org:
+          members:
+            _and:
+              - user_id:
+                  _eq: X-Hasura-User-Id
+              - role:
+                  _eq: owner
+      allow_aggregations: true
+# Runs are read-only over GraphQL for every client role. There is no insert,
+# update or delete permission at all, which is what makes "a viewer cannot
+# trigger a run" true even against a hand-written mutation: the only way to
+# create a run is the triggerWorkflowRun Action, which checks the caller's role
+# and the org's quota before writing anything.

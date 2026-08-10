@@ -1,0 +1,80 @@
+table:
+  name: org_usage_summary
+  schema: public
+# The required org-level aggregation, as a Postgres view: quota position for the
+# current period plus run counts and average run duration this month. Exposed
+# through the same membership-scoped permission as everything else, and safe to
+# subscribe to, which is how the UI keeps the quota indicator live.
+object_relationships:
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          name: organizations
+          schema: public
+        column_mapping:
+          org_id: id
+select_permissions:
+  - role: viewer
+    permission:
+      columns:
+        - org_id
+        - period_start
+        - calls_used
+        - calls_allowed
+        - calls_remaining
+        - runs_this_period
+        - succeeded_runs
+        - failed_runs
+        - paused_runs
+        - avg_run_duration_seconds
+      filter:
+        organization:
+          members:
+            _and:
+              - user_id:
+                  _eq: X-Hasura-User-Id
+              - role:
+                  _eq: viewer
+  - role: editor
+    permission:
+      columns:
+        - org_id
+        - period_start
+        - calls_used
+        - calls_allowed
+        - calls_remaining
+        - runs_this_period
+        - succeeded_runs
+        - failed_runs
+        - paused_runs
+        - avg_run_duration_seconds
+      filter:
+        organization:
+          members:
+            _and:
+              - user_id:
+                  _eq: X-Hasura-User-Id
+              - role:
+                  _eq: editor
+  - role: owner
+    permission:
+      columns:
+        - org_id
+        - period_start
+        - calls_used
+        - calls_allowed
+        - calls_remaining
+        - runs_this_period
+        - succeeded_runs
+        - failed_runs
+        - paused_runs
+        - avg_run_duration_seconds
+      filter:
+        organization:
+          members:
+            _and:
+              - user_id:
+                  _eq: X-Hasura-User-Id
+              - role:
+                  _eq: owner

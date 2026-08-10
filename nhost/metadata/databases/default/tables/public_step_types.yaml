@@ -1,0 +1,28 @@
+table:
+  name: step_types
+  schema: public
+# Not an enum table: it carries `requires_owner`, which is the single source of
+# truth for the second permission layer. The editor insert/update permissions on
+# workflow_steps join to this flag, and the Action handler re-reads it at
+# execution time.
+array_relationships:
+  - name: steps
+    using:
+      foreign_key_constraint_on:
+        column: type
+        table:
+          name: workflow_steps
+          schema: public
+select_permissions:
+  - role: viewer
+    permission:
+      columns: [value, comment, requires_owner]
+      filter: {}
+  - role: editor
+    permission:
+      columns: [value, comment, requires_owner]
+      filter: {}
+  - role: owner
+    permission:
+      columns: [value, comment, requires_owner]
+      filter: {}

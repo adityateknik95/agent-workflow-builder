@@ -1,0 +1,23 @@
+table:
+  name: org_roles
+  schema: public
+# Tracked as a Hasura enum table so `role` is a GraphQL enum rather than a
+# free-text string, which stops a typo'd role from ever reaching the database.
+is_enum: true
+select_permissions:
+  - role: user
+    permission:
+      columns: [value, comment]
+      filter: {}
+  - role: viewer
+    permission:
+      columns: [value, comment]
+      filter: {}
+  - role: editor
+    permission:
+      columns: [value, comment]
+      filter: {}
+  - role: owner
+    permission:
+      columns: [value, comment]
+      filter: {}

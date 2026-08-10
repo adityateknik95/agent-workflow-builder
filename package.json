@@ -1,0 +1,30 @@
+{
+  "name": "ai-agent-workflow-builder",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Multi-tenant AI agent workflow builder on nhost, Hasura and PostgreSQL",
+  "scripts": {
+    "db:migrate": "node tools/apply-migrations.mjs",
+    "db:metadata": "node tools/apply-metadata.mjs",
+    "db:apply": "npm run db:migrate && npm run db:metadata",
+    "db:reset": "node tools/apply-migrations.mjs --reset && npm run db:metadata",
+    "seed": "node tools/seed.mjs",
+    "functions:dev": "tsx tools/functions-dev-server.ts",
+    "verify": "node tools/verify-scenario.mjs",
+    "typecheck": "tsc --noEmit -p functions/tsconfig.json",
+    "web:dev": "npm --prefix web run dev",
+    "web:build": "npm --prefix web run build"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.11",
+    "dotenv": "^17.2.3",
+    "graphql": "^16.11.0",
+    "pg": "^8.16.3",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "yaml": "^2.8.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

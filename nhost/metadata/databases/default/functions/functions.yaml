@@ -1,0 +1,8 @@
+# Exposed as a mutation, but deliberately granted to no client role: the
+# quota_consumptions table it returns has no select permission for owner,
+# editor or viewer, so only the Action handlers (admin secret) can call it.
+- function:
+    name: consume_org_quota
+    schema: public
+  configuration:
+    exposed_as: mutation

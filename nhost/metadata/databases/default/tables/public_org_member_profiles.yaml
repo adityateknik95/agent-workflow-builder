@@ -1,0 +1,48 @@
+table:
+  name: org_member_profiles
+  schema: public
+object_relationships:
+  - name: organization
+    using:
+      manual_configuration:
+        remote_table:
+          name: organizations
+          schema: public
+        column_mapping:
+          org_id: id
+# Emails of co-members only. The filter is the same membership predicate used
+# everywhere else, so a member of one org can never resolve a user in another.
+select_permissions:
+  - role: viewer
+    permission:
+      columns: [org_member_id, org_id, user_id, role, email, display_name, created_at]
+      filter:
+        organization:
+          members:
+            _and:
+              - user_id:
+                  _eq: X-Hasura-User-Id
+              - role:
+                  _eq: viewer
+  - role: editor
+    permission:
+      columns: [org_member_id, org_id, user_id, role, email, display_name, created_at]
+      filter:
+        organization:
+          members:
+            _and:
+              - user_id:
+                  _eq: X-Hasura-User-Id
+              - role:
+                  _eq: editor
+  - role: owner
+    permission:
+      columns: [org_member_id, org_id, user_id, role, email, display_name, created_at]
+      filter:
+        organization:
+          members:
+            _and:
+              - user_id:
+                  _eq: X-Hasura-User-Id
+              - role:
+                  _eq: owner

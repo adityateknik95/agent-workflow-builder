@@ -1,0 +1,86 @@
+table:
+  name: step_runs
+  schema: public
+object_relationships:
+  - name: run
+    using:
+      foreign_key_constraint_on: workflow_run_id
+  - name: step
+    using:
+      foreign_key_constraint_on: workflow_step_id
+  - name: org
+    using:
+      foreign_key_constraint_on: org_id
+  # Who cleared the approval gate, resolved without exposing auth.users.
+  - name: approver
+    using:
+      manual_configuration:
+        remote_table:
+          name: org_member_profiles
+          schema: public
+        column_mapping:
+          approved_by: user_id
+          org_id: org_id
+select_permissions:
+  # This is the table the live subscription reads. The filter is evaluated on
+  # every push, so a member of another org watching a guessed workflow_run_id
+  # gets an open socket that never yields a row.
+  - role: viewer
+    permission:
+      columns: &step_run_columns
+        - id
+        - workflow_run_id
+        - workflow_step_id
+        - org_id
+        - position
+        - step_type
+        - step_name
+        - status
+        - input
+        - output
+        - error
+        - attempt
+        - approved_by
+        - approved_at
+        - approval_note
+        - started_at
+        - finished_at
+        - created_at
+        - updated_at
+      filter:
+        org:
+          members:
+            _and:
+              - user_id:
+                  _eq: X-Hasura-User-Id
+              - role:
+                  _eq: viewer
+      allow_aggregations: true
+  - role: editor
+    permission:
+      columns: *step_run_columns
+      filter:
+        org:
+          members:
+            _and:
+              - user_id:
+                  _eq: X-Hasura-User-Id
+              - role:
+                  _eq: editor
+      allow_aggregations: true
+  - role: owner
+    permission:
+      columns: *step_run_columns
+      filter:
+        org:
+          members:
+            _and:
+              - user_id:
+                  _eq: X-Hasura-User-Id
+              - role:
+                  _eq: owner
+      allow_aggregations: true
+# No write permissions for any client role. In particular there is no update
+# permission that would let a member set approved_by/approved_at themselves --
+# clearing a gate is a mid-execution decision, so it goes through the approveStep
+# Action, which verifies the approver's role and then resumes the executor.

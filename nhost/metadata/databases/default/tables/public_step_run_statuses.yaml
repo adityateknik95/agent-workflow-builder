@@ -1,0 +1,17 @@
+table:
+  name: step_run_statuses
+  schema: public
+is_enum: true
+select_permissions:
+  - role: viewer
+    permission:
+      columns: [value, comment]
+      filter: {}
+  - role: editor
+    permission:
+      columns: [value, comment]
+      filter: {}
+  - role: owner
+    permission:
+      columns: [value, comment]
+      filter: {}
