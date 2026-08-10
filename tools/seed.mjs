@@ -9,9 +9,15 @@
 import 'dotenv/config';
 
 const AUTH_URL = process.env.AUTH_URL ?? 'http://localhost:4000/v1';
-const GRAPHQL_URL =
-  process.env.NEXT_PUBLIC_GRAPHQL_URL ??
-  `${(process.env.HASURA_GRAPHQL_ENDPOINT ?? 'http://localhost:8080').replace(/\/$/, '')}/v1/graphql`;
+
+// HASURA_GRAPHQL_ENDPOINT wins when it is set. It is the variable you override to
+// point this at a deployed backend, and reading NEXT_PUBLIC_GRAPHQL_URL first
+// would let a localhost value in .env quietly redirect the seed back to the local
+// stack even though the command named a remote endpoint.
+const GRAPHQL_URL = process.env.HASURA_GRAPHQL_ENDPOINT
+  ? `${process.env.HASURA_GRAPHQL_ENDPOINT.replace(/\/$/, '')}/v1/graphql`
+  : (process.env.NEXT_PUBLIC_GRAPHQL_URL ?? 'http://localhost:8080/v1/graphql');
+
 const ADMIN_SECRET = process.env.HASURA_GRAPHQL_ADMIN_SECRET;
 const PASSWORD = 'Password123!';
 

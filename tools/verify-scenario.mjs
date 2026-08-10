@@ -8,10 +8,16 @@
 //   npm run verify
 import 'dotenv/config';
 
-const GRAPHQL_URL =
-  process.env.NEXT_PUBLIC_GRAPHQL_URL ??
-  `${(process.env.HASURA_GRAPHQL_ENDPOINT ?? 'http://localhost:8080').replace(/\/$/, '')}/v1/graphql`;
-const WS_URL = process.env.NEXT_PUBLIC_GRAPHQL_WS_URL ?? GRAPHQL_URL.replace(/^http/, 'ws');
+// Same precedence as the seed: naming HASURA_GRAPHQL_ENDPOINT on the command line
+// must win over any NEXT_PUBLIC_* value sitting in .env, or you end up verifying
+// localhost while believing you verified the deployment.
+const GRAPHQL_URL = process.env.HASURA_GRAPHQL_ENDPOINT
+  ? `${process.env.HASURA_GRAPHQL_ENDPOINT.replace(/\/$/, '')}/v1/graphql`
+  : (process.env.NEXT_PUBLIC_GRAPHQL_URL ?? 'http://localhost:8080/v1/graphql');
+
+const WS_URL = process.env.HASURA_GRAPHQL_ENDPOINT
+  ? GRAPHQL_URL.replace(/^http/, 'ws')
+  : (process.env.NEXT_PUBLIC_GRAPHQL_WS_URL ?? GRAPHQL_URL.replace(/^http/, 'ws'));
 const AUTH_URL = process.env.AUTH_URL ?? 'http://localhost:4000/v1';
 const ADMIN_SECRET = process.env.HASURA_GRAPHQL_ADMIN_SECRET;
 const PASSWORD = 'Password123!';

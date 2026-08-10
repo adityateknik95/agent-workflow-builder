@@ -304,6 +304,31 @@ Add the Vercel URL to `[auth.redirections].allowedUrls` in `nhost.toml`.
 
 `npm run verify` works against a deployed stack too — point `.env` at it.
 
+### Notes from actually deploying this
+
+Five deploys failed before one went green, every one of them in configuration
+rather than code. Recording them because most are not obvious from the docs:
+
+- **`nhost config validate` passing is necessary but not sufficient.** The cloud
+  validates against an older schema than the CLI carries, and rejected
+  `hasura.settings.unauthorizedRole` as an unknown field even though the CLI
+  accepted it. Only a real deploy proves a config.
+- **Resource requests are not clamped to your plan, they fail.** Asking for 10 GB
+  of Postgres on a 1 GB plan fails the whole deploy.
+- **`global.environment` rejects `HASURA_`-prefixed names** — reserved. So that is
+  not a workaround for a config field the cloud will not take.
+- **You do not need to set the unauthorized role.** nhost already resolves
+  anonymous requests as `public`: an unauthenticated query returns a *schema*
+  error rather than an auth error, which is only possible if a role was resolved.
+  `public` is granted nothing anywhere, so it reaches the webhook Action and
+  nothing else.
+- **`nhost/config.yaml` is required.** The deploy runs the Hasura CLI against
+  `nhost/`, and without that file the migrations and metadata step never runs.
+  `npm run db:apply` talks to the metadata API directly, so this gap does not
+  show up locally — worth running the CLI's own commands
+  (`hasura --project nhost migrate apply` / `metadata apply`) before trusting a
+  deploy.
+
 ### Running the backend without the nhost CLI
 
 `docker-compose.yml` runs the same three services the CLI does, pinned, and mounts
