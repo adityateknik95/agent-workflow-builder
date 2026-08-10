@@ -4,6 +4,12 @@
 Sign in as `owner.a@example.com` / `Password123!` (see the table below for the
 other roles and the second organisation).
 
+**Walkthrough recording:**
+<https://1drv.ms/v/c/e9da7c0c7050740c/IQBuu5NhLL_vRY7bI-ICb51xAc8x231gHTXRF4sQxhib4hU?e=5qQG4M>
+The acceptance scenario end to end: two organisations, a workflow that pauses on an
+approval gate, live step-by-step status, and an owner of the second organisation
+failing to reach the first one's run even with the exact id.
+
 A small multi-tenant workflow engine for chaining AI agent steps, built on nhost
 (PostgreSQL + Hasura + Auth + Functions) with a Next.js front end.
 
@@ -126,6 +132,7 @@ If you are reviewing this, these are the files that carry the substance:
 | Approval pause/resume | [`functions/actions/approve-step.ts`](functions/actions/approve-step.ts) |
 | Live subscription | [`web/src/app/runs/[id]/page.tsx`](web/src/app/runs/[id]/page.tsx) |
 | Reasoning behind the design | [`WRITEUP.md`](WRITEUP.md) — one page, or [`DESIGN.md`](DESIGN.md) at length |
+| All of it happening, in order | [walkthrough recording](https://1drv.ms/v/c/e9da7c0c7050740c/IQBuu5NhLL_vRY7bI-ICb51xAc8x231gHTXRF4sQxhib4hU?e=5qQG4M) |
 
 ---
 
