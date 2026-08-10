@@ -12,19 +12,17 @@
 #     decided by the row permissions against org_members, never by the token.
 #
 #   * anonymous requests must resolve as `public`, because the inbound webhook
-#     Action is called with no session. That is set as a Hasura environment
-#     variable rather than a config field, since `unauthorizedRole` is not
-#     accepted by every version of the config schema.
+#     Action is called with no session. nhost already configures `public` as the
+#     unauthorized role, so nothing is set here: an unauthenticated query against
+#     the project answers with a schema error rather than an auth error, which is
+#     only possible if a role was resolved. `public` is granted no table
+#     permissions anywhere, so it can reach that one Action and nothing else.
 #
 # Service versions are not pinned on purpose. A pin older than what the project
 # already runs is a downgrade, and downgrading auth or storage past their own
 # migrations is unsafe.
 
 [global]
-
-[[global.environment]]
-name = 'HASURA_GRAPHQL_UNAUTHORIZED_ROLE'
-value = 'public'
 
 [[global.environment]]
 name = 'LLM_PROVIDER'
@@ -81,3 +79,8 @@ emailVerificationRequired = false
 [postgres.resources]
 [postgres.resources.storage]
 capacity = 1
+
+# Required by the config schema rather than something this project uses.
+[observability]
+[observability.grafana]
+adminPassword = '{{ secrets.GRAFANA_ADMIN_PASSWORD }}'
