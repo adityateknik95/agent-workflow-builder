@@ -81,23 +81,30 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <div className="card tight" style={{ marginTop: '0.75rem' }}>
-          <div className="muted small" style={{ marginBottom: '0.35rem' }}>
-            seeded accounts — password <span className="mono">Password123!</span>
+        {/* Collapsed by default. The roster is here so a reviewer can switch
+            between roles and organisations without going back to the README, but
+            it has no business being the first thing on a sign-in screen. */}
+        <details className="disclosure">
+          <summary>Reviewing this? Demo accounts</summary>
+          <div className="disclosure-body">
+            <p className="muted small" style={{ margin: '0 0 0.5rem' }}>
+              Every account uses the password <span className="mono">Password123!</span>. Roles are per
+              organisation, so the same person can be an owner in one org and nothing in another.
+            </p>
+            {DEMO_ACCOUNTS.map((account) => (
+              <div className="demo-account" key={account.email}>
+                <span>
+                  <span className="mono">{account.email}</span>
+                  <br />
+                  <span className="muted small">{account.label}</span>
+                </span>
+                <button type="button" className="tiny" onClick={() => setEmail(account.email)}>
+                  use
+                </button>
+              </div>
+            ))}
           </div>
-          {DEMO_ACCOUNTS.map((account) => (
-            <div className="demo-account" key={account.email}>
-              <span>
-                <span className="mono">{account.email}</span>
-                <br />
-                <span className="muted small">{account.label}</span>
-              </span>
-              <button type="button" className="tiny" onClick={() => setEmail(account.email)}>
-                use
-              </button>
-            </div>
-          ))}
-        </div>
+        </details>
       </div>
     </div>
   );
