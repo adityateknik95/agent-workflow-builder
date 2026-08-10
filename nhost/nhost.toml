@@ -1,21 +1,30 @@
 # nhost project configuration.
 #
-# Run `nhost config validate` after cloning: the CLI pins service versions to what
-# your installed version supports, and it will tell you if any of these need
-# bumping.
+# Deliberately minimal. The config schema the cloud validates against is older
+# than the one `nhost config validate` uses locally, so anything optional here is
+# a chance for a deploy to fail on an unknown field for no benefit. Tuning that
+# does not change behaviour (log levels, console flags, event pool sizes) is left
+# at the platform defaults, and the two things this project genuinely needs are
+# set the version-independent way:
 #
-# The one setting that matters most for this project is the allowed roles list
-# under [auth.user.roles]. owner/editor/viewer have to be issuable in a user's
-# JWT, because the app asks Hasura to act as one of them per request. Which of
-# them a user actually holds for a given organisation is decided by the row
-# permissions against org_members, never by the token.
+#   * owner/editor/viewer must be issuable in a user's JWT -- [auth.user.roles]
+#     below. Which of them a user actually holds for a given organisation is
+#     decided by the row permissions against org_members, never by the token.
 #
-# Service versions are deliberately not pinned. A pin that is older than what the
-# project already runs is a downgrade, and downgrading auth or storage past their
-# own migrations is not safe -- this project was set up against auth 0.49.1 and
-# storage 0.14.0, so the platform's defaults are left to win.
+#   * anonymous requests must resolve as `public`, because the inbound webhook
+#     Action is called with no session. That is set as a Hasura environment
+#     variable rather than a config field, since `unauthorizedRole` is not
+#     accepted by every version of the config schema.
+#
+# Service versions are not pinned on purpose. A pin older than what the project
+# already runs is a downgrade, and downgrading auth or storage past their own
+# migrations is unsafe.
 
 [global]
+
+[[global.environment]]
+name = 'HASURA_GRAPHQL_UNAUTHORIZED_ROLE'
+value = 'public'
 
 [[global.environment]]
 name = 'LLM_PROVIDER'
@@ -41,24 +50,6 @@ webhookSecret = '{{ secrets.NHOST_WEBHOOK_SECRET }}'
 type = 'HS256'
 key = '{{ secrets.HASURA_GRAPHQL_JWT_SECRET }}'
 
-[hasura.settings]
-corsDomain = ['*']
-devMode = false
-enableAllowList = false
-enableConsole = true
-enableRemoteSchemaPermissions = false
-enabledAPIs = ['metadata', 'graphql']
-# Anonymous requests resolve as `public`. No table grants that role anything; it
-# exists so the inbound webhook Action can be called without a session.
-unauthorizedRole = 'public'
-stringifyNumericTypes = false
-
-[hasura.logs]
-level = 'warn'
-
-[hasura.events]
-httpPoolSize = 100
-
 [functions]
 [functions.node]
 version = 22
@@ -81,45 +72,12 @@ enabled = true
 default = 'user'
 allowed = ['user', 'me', 'owner', 'editor', 'viewer']
 
-[auth.user.email]
-[auth.user.emailDomains]
-
-[auth.session]
-[auth.session.accessToken]
-expiresIn = 900
-
-[auth.session.refreshToken]
-expiresIn = 2592000
-
 [auth.method]
 [auth.method.emailPassword]
 emailVerificationRequired = false
-hibpEnabled = false
-passwordMinLength = 9
-
-[auth.method.emailPasswordless]
-enabled = false
-
-[auth.method.anonymous]
-enabled = false
-
-[auth.method.webauthn]
-enabled = false
-
-[auth.rateLimit]
 
 [postgres]
 
 [postgres.resources]
 [postgres.resources.storage]
-# 1 GB is what the Starter plan allows, and this schema needs a tiny fraction of
-# it. Asking for more than the plan permits fails the deploy outright.
 capacity = 1
-
-[provider]
-
-[storage]
-
-[observability]
-[observability.grafana]
-adminPassword = '{{ secrets.GRAFANA_ADMIN_PASSWORD }}'
