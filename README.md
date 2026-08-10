@@ -125,7 +125,7 @@ If you are reviewing this, these are the files that carry the substance:
 | The executor | [`functions/_lib/executor.ts`](functions/_lib/executor.ts) |
 | Approval pause/resume | [`functions/actions/approve-step.ts`](functions/actions/approve-step.ts) |
 | Live subscription | [`web/src/app/runs/[id]/page.tsx`](web/src/app/runs/[id]/page.tsx) |
-| Reasoning behind the design | [`WRITEUP.md`](WRITEUP.md) |
+| Reasoning behind the design | [`WRITEUP.md`](WRITEUP.md) — one page, or [`DESIGN.md`](DESIGN.md) at length |
 
 ---
 
