@@ -1,5 +1,9 @@
 # Agent Workflow Builder
 
+**Live app:** <https://agent-workflow-builder-swart.vercel.app>
+Sign in as `owner.a@example.com` / `Password123!` (see the table below for the
+other roles and the second organisation).
+
 A small multi-tenant workflow engine for chaining AI agent steps, built on nhost
 (PostgreSQL + Hasura + Auth + Functions) with a Next.js front end.
 
