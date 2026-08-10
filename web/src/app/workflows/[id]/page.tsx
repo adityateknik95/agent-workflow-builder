@@ -110,9 +110,14 @@ function Builder() {
       <div className="card">
         <h2>Could not load this workflow</h2>
         <div className="notice bad">{queryError}</div>
-        <Link className="btn" href="/workflows">
-          Back to workflows
-        </Link>
+        <div className="row">
+          <button className="primary" onClick={refetch}>
+            Try again
+          </button>
+          <Link className="btn" href="/workflows">
+            Back to workflows
+          </Link>
+        </div>
       </div>
     );
   }

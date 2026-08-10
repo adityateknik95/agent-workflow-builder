@@ -84,7 +84,16 @@ function WorkflowList() {
 
       {loading && <div className="card">loading workflows…</div>}
 
-      {queryError && <div className="notice bad">could not load workflows: {queryError}</div>}
+      {queryError && (
+        <div className="notice bad">
+          could not load workflows: {queryError}
+          <div style={{ marginTop: '0.5rem' }}>
+            <button className="tiny" onClick={refetch}>
+              Try again
+            </button>
+          </div>
+        </div>
+      )}
 
       {!loading && !queryError && (data?.workflows?.length ?? 0) === 0 && (
         <div className="card">

@@ -10,9 +10,14 @@ import { GRAPHQL_WS_URL, nhost } from './nhost';
  * organisation that owns the rows is decided by the row permissions, so asking for
  * `owner` while being a viewer simply returns nothing.
  */
-export async function request<TData>(
+/** True for documents that write, which must never be retried automatically. */
+function isMutation(query: string): boolean {
+  return /^\s*(?:#[^\n]*\n\s*)*mutation\b/.test(query);
+}
+
+async function send<TData>(
   query: string,
-  variables: Record<string, unknown> = {},
+  variables: Record<string, unknown>,
   role?: string
 ): Promise<TData> {
   const response = await nhost().graphql.request<TData>(
@@ -26,6 +31,31 @@ export async function request<TData>(
   }
   if (!body.data) throw new Error('the server returned no data');
   return body.data;
+}
+
+export async function request<TData>(
+  query: string,
+  variables: Record<string, unknown> = {},
+  role?: string
+): Promise<TData> {
+  try {
+    return await send<TData>(query, variables, role);
+  } catch (error) {
+    // A failure at the network layer (rather than a GraphQL error) is usually
+    // transient: the very first query after signing in can race the SDK
+    // attaching or refreshing the access token, and a free-tier backend can be
+    // waking up. One retry turns that into a hidden hiccup instead of an error
+    // screen the user has to reload past.
+    //
+    // Reads only. A network failure on a mutation leaves us unable to tell
+    // whether it was applied, and retrying triggerWorkflowRun would risk
+    // starting a second run.
+    const networkLevel = error instanceof TypeError || /failed to fetch|network|load failed/i.test(String(error));
+    if (!networkLevel || isMutation(query)) throw error;
+
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    return send<TData>(query, variables, role);
+  }
 }
 
 export interface QueryState<TData> {
