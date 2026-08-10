@@ -1,0 +1,23 @@
+# Tracked by the nhost auth service. Included here so that applying this
+# metadata directory (which replaces metadata wholesale) does not untrack the
+# tables hasura-auth needs, and so no client role is ever granted access to them.
+table:
+  name: providers
+  schema: auth
+configuration:
+  column_config:
+    id:
+      custom_name: id
+  custom_column_names:
+    id: id
+  custom_name: authProviders
+  custom_root_fields:
+    delete: deleteAuthProviders
+    delete_by_pk: deleteAuthProvider
+    insert: insertAuthProviders
+    insert_one: insertAuthProvider
+    select: authProviders
+    select_aggregate: authProvidersAggregate
+    select_by_pk: authProvider
+    update: updateAuthProviders
+    update_by_pk: updateAuthProvider

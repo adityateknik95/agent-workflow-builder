@@ -1,0 +1,26 @@
+# Tracked by the nhost auth service. Included here so that applying this
+# metadata directory (which replaces metadata wholesale) does not untrack the
+# tables hasura-auth needs, and so no client role is ever granted access to them.
+table:
+  name: refresh_token_types
+  schema: auth
+configuration:
+  column_config:
+    comment:
+      custom_name: comment
+    value:
+      custom_name: value
+  custom_column_names:
+    comment: comment
+    value: value
+  custom_name: authRefreshTokenTypes
+  custom_root_fields:
+    delete: deleteAuthRefreshTokenTypes
+    delete_by_pk: deleteAuthRefreshTokenType
+    insert: insertAuthRefreshTokenTypes
+    insert_one: insertAuthRefreshTokenType
+    select: authRefreshTokenTypes
+    select_aggregate: authRefreshTokenTypesAggregate
+    select_by_pk: authRefreshTokenType
+    update: updateAuthRefreshTokenTypes
+    update_by_pk: updateAuthRefreshTokenType

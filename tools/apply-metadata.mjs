@@ -119,12 +119,23 @@ const sources = loadYaml(join(METADATA_DIR, 'databases', 'databases.yaml'));
 const cronTriggers = loadYaml(join(METADATA_DIR, 'cron_triggers.yaml')) ?? [];
 const { actions, custom_types } = buildActions();
 
+// The metadata directory now carries the auth-schema tables too (see
+// auth_*.yaml), because applying metadata replaces it wholesale and hasura-auth
+// stops working if its tables are untracked. Anything else already tracked
+// outside `public` that the directory does not describe is carried over rather
+// than dropped, so a service that tracks its own tables is never clobbered.
 const current = await metadataApi('export_metadata', {});
 const currentSource = (current.sources ?? []).find((s) => s.name === 'default');
-const foreignTables = (currentSource?.tables ?? []).filter((t) => t.table.schema !== 'public');
 
 for (const source of sources) {
-  source.tables = [...foreignTables, ...(source.tables ?? [])];
+  const described = new Set((source.tables ?? []).map((t) => `${t.table.schema}.${t.table.name}`));
+  const carriedOver = (currentSource?.tables ?? []).filter(
+    (t) => t.table.schema !== 'public' && !described.has(`${t.table.schema}.${t.table.name}`)
+  );
+  source.tables = [...carriedOver, ...(source.tables ?? [])];
+  if (carriedOver.length > 0) {
+    console.log(`carrying over ${carriedOver.length} tracked table(s) not described by the metadata directory`);
+  }
 }
 
 const metadata = {
@@ -135,9 +146,10 @@ const metadata = {
   cron_triggers: cronTriggers,
 };
 
-const managed = sources[0].tables.length - foreignTables.length;
+const trackedTables = sources[0].tables ?? [];
+const publicTables = trackedTables.filter((t) => t.table.schema === 'public').length;
 console.log(
-  `applying metadata: ${managed} public tables (+${foreignTables.length} kept from auth), ` +
+  `applying metadata: ${publicTables} public tables, ${trackedTables.length - publicTables} auth tables, ` +
     `${actions.length} actions, ${cronTriggers.length} cron trigger(s)`
 );
 

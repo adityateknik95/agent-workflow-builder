@@ -1,3 +1,15 @@
+# auth schema, owned by the nhost auth service
+- "!include auth_provider_requests.yaml"
+- "!include auth_providers.yaml"
+- "!include auth_refresh_token_types.yaml"
+- "!include auth_refresh_tokens.yaml"
+- "!include auth_roles.yaml"
+- "!include auth_user_providers.yaml"
+- "!include auth_user_roles.yaml"
+- "!include auth_user_security_keys.yaml"
+- "!include auth_users.yaml"
+
+# application tables
 - "!include public_org_roles.yaml"
 - "!include public_step_types.yaml"
 - "!include public_trigger_types.yaml"

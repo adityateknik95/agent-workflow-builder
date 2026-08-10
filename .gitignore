@@ -19,3 +19,6 @@ Thumbs.db
 
 # editor/agent tooling
 .claude/
+
+# nhost CLI secret values
+.secrets

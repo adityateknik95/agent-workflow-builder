@@ -259,16 +259,24 @@ recorded and marked `skipped` rather than `sent`.
 ## Deploying
 
 **Backend (nhost).** Create a project, connect this repository, and set the
-secrets referenced by `nhost.toml` (`HASURA_GRAPHQL_ADMIN_SECRET`,
-`HASURA_GRAPHQL_JWT_SECRET`, `NHOST_WEBHOOK_SECRET`, and the `LLM_*` ones). nhost
-applies `nhost/migrations` and `nhost/metadata` and deploys `functions/` on push.
-Run `nhost config validate` first — the CLI pins service versions and will say if
-any need bumping for your version.
+secrets referenced by `nhost/nhost.toml` (`HASURA_GRAPHQL_ADMIN_SECRET`,
+`HASURA_GRAPHQL_JWT_SECRET`, `NHOST_WEBHOOK_SECRET`, `GRAFANA_ADMIN_PASSWORD` and
+the `LLM_*` ones — see `.secrets.example` for the full list). nhost applies
+`nhost/migrations` and `nhost/metadata` and deploys `functions/` on push.
+
+The config and the metadata directory are both checked against the real CLI:
+`nhost config validate` reports valid, and `hasura metadata apply` — the command
+the deploy runs — applies cleanly, including the Actions built from
+`actions.graphql`. `hasura migrate status` shows all six migrations as `Present`
+in both source and database.
 
 The metadata references `{{NHOST_FUNCTIONS_URL}}` and `{{NHOST_WEBHOOK_SECRET}}`
 for every Action, Event Trigger and Cron Trigger, so nothing needs editing between
 environments. Confirm `NHOST_FUNCTIONS_URL` is set for the Hasura service to your
 project's functions URL.
+
+To run the CLI locally, copy `.secrets.example` to `.secrets` first — the CLI reads
+`{{ secrets.* }}` from there, and it is gitignored.
 
 Then seed once against the deployed backend:
 
@@ -303,12 +311,15 @@ the project can be brought up with plain Docker; `nhost up` works equally well.
 ## Repository layout
 
 ```
-nhost.toml                     nhost project config
 docker-compose.yml             local Postgres + Hasura + Auth
+.secrets.example               values for {{ secrets.* }} in nhost/nhost.toml
 nhost/
+  nhost.toml                   nhost project config
   migrations/default/          six SQL migrations, applied in order
   metadata/                    Hasura metadata in the CLI's own layout
     databases/default/tables/  one file per table: relationships + permissions
+                               (auth_*.yaml included so applying metadata does
+                                not untrack the tables hasura-auth needs)
     actions.yaml/.graphql      the three Actions and their permissions
     cron_triggers.yaml         the every-minute schedule dispatcher
 functions/

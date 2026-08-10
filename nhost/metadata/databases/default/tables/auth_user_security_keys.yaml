@@ -1,0 +1,32 @@
+# Tracked by the nhost auth service. Included here so that applying this
+# metadata directory (which replaces metadata wholesale) does not untrack the
+# tables hasura-auth needs, and so no client role is ever granted access to them.
+table:
+  name: user_security_keys
+  schema: auth
+configuration:
+  column_config:
+    credential_id:
+      custom_name: credentialId
+    credential_public_key:
+      custom_name: credentialPublicKey
+    id:
+      custom_name: id
+    user_id:
+      custom_name: userId
+  custom_column_names:
+    credential_id: credentialId
+    credential_public_key: credentialPublicKey
+    id: id
+    user_id: userId
+  custom_name: authUserSecurityKeys
+  custom_root_fields:
+    delete: deleteAuthUserSecurityKeys
+    delete_by_pk: deleteAuthUserSecurityKey
+    insert: insertAuthUserSecurityKeys
+    insert_one: insertAuthUserSecurityKey
+    select: authUserSecurityKeys
+    select_aggregate: authUserSecurityKeysAggregate
+    select_by_pk: authUserSecurityKey
+    update: updateAuthUserSecurityKeys
+    update_by_pk: updateAuthUserSecurityKey

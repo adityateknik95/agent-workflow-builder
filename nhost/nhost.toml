@@ -104,6 +104,10 @@ enabled = false
 [postgres]
 version = '16.4-20241017-1'
 
+[postgres.resources]
+[postgres.resources.storage]
+capacity = 10
+
 [provider]
 
 [storage]
