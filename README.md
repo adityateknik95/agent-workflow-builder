@@ -50,6 +50,11 @@ Start Postgres, Hasura and nhost Auth:
 docker compose up -d
 ```
 
+If you already run Postgres on 5432, that maps onto your existing server and
+`db:apply` will target the wrong database. Change the mapping to `"55432:5432"` in
+`docker-compose.yml` and set `DATABASE_URL` to match — nothing else needs to move,
+since Hasura reaches Postgres over the compose network rather than the host port.
+
 Apply the schema and the Hasura metadata, then seed two organisations:
 
 ```bash
